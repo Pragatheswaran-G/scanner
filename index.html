@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner & JSON Storage</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        h1 {
+            color: #2575fc;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #6a11cb;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .section {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #2575fc;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #333;
+            margin-bottom: 15px;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        
+        .scan-area {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border: 3px solid #2575fc;
+            border-radius: 10px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 25px rgba(37, 117, 252, 0.7);
+        }
+        
+        .scan-line {
+            position: absolute;
+            height: 3px;
+            width: 190px;
+            background: #2575fc;
+            top: 40%;
+            animation: scan 2s infinite linear;
+        }
+        
+        @keyframes scan {
+            0% { top: 10%; }
+            50% { top: 80%; }
+            100% { top: 10%; }
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #2575fc;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        button:hover {
+            background: #6a11cb;
+        }
+        
+        button.secondary {
+            background: #f8f9fa;
+            color: #333;
+        }
+        
+        button.secondary:hover {
+            background: #e2e6ea;
+        }
+        
+        .data-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .raw-data {
+            margin-bottom: 15px;
+        }
+        
+        #rawContent {
+            font-family: monospace;
+            background: #2d3748;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 60px;
+            overflow-x: auto;
+        }
+        
+        .product-info {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .info-value {
+            font-weight: 500;
+        }
+        
+        .json-display {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .storage-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .stored-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2575fc;
+        }
+        
+        .instructions {
+            background: #fff4e6;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            color: #e67e22;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.6;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .tamil {
+            color: #d35400;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>QR Code Scanner & JSON Storage</h1>
+            <p class="subtitle">Scan your QR codes and store data as JSON</p>
+            <p class="tamil">நீங்கள் உருவாக்கிய QR கோடுகளை ஸ்கேன் செய்து, JSON ஆக சேமிக்கவும்</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="section">
+                <h2>QR Code Scanner</h2>
+                <div class="scanner-container">
+                    <video id="video" autoplay playsinline></video>
+                    <div class="scan-area">
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="startButton">
+                        <i class="fas fa-camera"></i> Start Camera
+                    </button>
+                    <button id="stopButton" class="secondary">
+                        <i class="fas fa-stop"></i> Stop Camera
+                    </button>
+                </div>
+                
+                <div class="data-display">
+                    <div class="raw-data">
+                        <h3>QR Code Content</h3>
+                        <div id="rawContent">No QR code detected yet</div>
+                    </div>
+                    
+                    <div class="product-info">
+                        <h3>Parsed Information</h3>
+                        <div class="info-row">
+                            <span class="info-label">Product Name:</span>
+                            <span class="info-value" id="productName">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Expiry Date:</span>
+                            <span class="info-value" id="expiryDate">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Days Until Expiry:</span>
+                            <span class="info-value" id="daysUntilExpiry">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="saveBtn">
+                    <i class="fas fa-save"></i> Save as JSON
+                </button>
+            </div>
+            
+            <div class="section">
+                <h2>JSON Data Storage</h2>
+                <div class="json-display" id="jsonOutput">
+                    {<br>
+                    &nbsp;&nbsp;"product": "No data",<br>
+                    &nbsp;&nbsp;"expiry": "No data",<br>
+                    &nbsp;&nbsp;"scanned_at": "No data"<br>
+                    }
+                </div>
+                
+                <div class="storage-list">
+                    <h3>Stored Products</h3>
+                    <div id="storedProducts">
+                        <p>No products stored yet</p>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="clearBtn" class="secondary">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                    <button id="exportBtn">
+                        <i class="fas fa-download"></i> Export JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>எப்படி பயன்படுத்துவது (How to Use)</h3>
+            <ol>
+                <li class="tamil">முதலில் "Start Camera" பொத்தானை அழுத்தி கேமராவை ஆன் செய்யவும்</li>
+                <li class="tamil">நீங்கள் உருவாக்கிய QR கோடை கேமராவின் முன்பு பிடிக்கவும்</li>
+                <li class="tamil">QR கோட்டில் உள்ள தகவல்கள் தானாகவே காட்டப்படும்</li>
+                <li class="tamil">"Save as JSON" பொத்தானை அழுத்தி தகவல்களை சேமிக்கவும்</li>
+                <li class="tamil">சேமிக்கப்பட்ட தகவல்கள் JSON format இல் கீழே காட்டப்படும்</li>
+                <li class="tamil">"Export JSON" அழுத்தி அனைத்து தகவல்களையும் download செய்யவும்</li>
+            </ol>
+            
+            <h3 style="margin-top: 20px;">QR Code Format Example</h3>
+            <p class="tamil">உங்கள் QR code இல் இந்த format இல் தகவல்கள் இருக்க வேண்டும்:</p>
+            <div style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <code>product: Biscuit, expiry: 20/11/2026</code><br>
+                <strong>அல்லது</strong><br>
+                <code>{"product": "Biscuit", "expiry": "2026-11-20"}</code>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('video');
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            const saveBtn = document.getElementById('saveBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const productName = document.getElementById('productName');
+            const expiryDate = document.getElementById('expiryDate');
+            const daysUntilExpiry = document.getElementById('daysUntilExpiry');
+            const jsonOutput = document.getElementById('jsonOutput');
+            const rawContent = document.getElementById('rawContent');
+            const storedProducts = document.getElementById('storedProducts');
+            
+            let stream = null;
+            let scanningInterval = null;
+            let currentData = null;
+            let allProducts = [];
+            
+            // Load saved data from localStorage
+            function loadSavedData() {
+                const saved = localStorage.getItem('qrProducts');
+                if (saved) {
+                    allProducts = JSON.parse(saved);
+                    updateStoredProductsList();
+                }
+            }
+            
+            // Save data to localStorage
+            function saveData() {
+                localStorage.setItem('qrProducts', JSON.stringify(allProducts));
+            }
+            
+            // Update the stored products list
+            function updateStoredProductsList() {
+                if (allProducts.length === 0) {
+                    storedProducts.innerHTML = '<p>No products stored yet</p>';
+                    return;
+                }
+                
+                let html = '';
+                allProducts.forEach((product, index) => {
+                    const days = calculateDaysUntilExpiry(product.expiry);
+                    const status = days < 0 ? 'Expired' : days <= 7 ? 'Expiring Soon' : 'Valid';
+                    const statusColor = days < 0 ? '#e74c3c' : days <= 7 ? '#f39c12' : '#27ae60';
+                    
+                    html += `
+                        <div class="stored-item">
+                            <div class="info-row">
+                                <span class="info-label">Product:</span>
+                                <span class="info-value">${product.product}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Expiry:</span>
+                                <span class="info-value">${formatDate(product.expiry)}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Status:</span>
+                                <span class="info-value" style="color: ${statusColor}">${status}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Scanned:</span>
+                                <span class="info-value">${new Date(product.scanned_at).toLocaleString()}</span>
+                            </div>
+                            <button onclick="deleteProduct(${index})" style="padding: 5px 10px; font-size: 12px; margin-top: 5px;">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                storedProducts.innerHTML = html;
+            }
+            
+            // Delete a product
+            window.deleteProduct = function(index) {
+                allProducts.splice(index, 1);
+                saveData();
+                updateStoredProductsList();
+            };
+            
+            // Start camera
+            startButton.addEventListener('click', async function() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: "environment" } 
+                    });
+                    video.srcObject = stream;
+                    
+                    // Start scanning for QR codes every 500ms
+                    scanningInterval = setInterval(scanQRCode, 500);
+                    
+                    startButton.disabled = true;
+                    stopButton.disabled = false;
+                } catch (err) {
+                    alert("Camera access error: " + err.message);
+                }
+            });
+            
+            // Stop camera
+            stopButton.addEventListener('click', function() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                if (scanningInterval) {
+                    clearInterval(scanningInterval);
+                }
+                
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            });
+            
+            // Save current data
+            saveBtn.addEventListener('click', function() {
+                if (!currentData) {
+                    alert("Please scan a QR code first!");
+                    return;
+                }
+                
+                const jsonData = {
+                    product: currentData.product,
+                    expiry: currentData.expiry,
+                    scanned_at: new Date().toISOString()
+                };
+                
+                allProducts.push(jsonData);
+                saveData();
+                updateStoredProductsList();
+                
+                alert("Product saved successfully!");
+            });
+            
+            // Clear all data
+            clearBtn.addEventListener('click', function() {
+                if (confirm("Are you sure you want to delete all stored products?")) {
+                    allProducts = [];
+                    saveData();
+                    updateStoredProductsList();
+                }
+            });
+            
+            // Export data as JSON file
+            exportBtn.addEventListener('click', function() {
+                if (allProducts.length === 0) {
+                    alert("No products to export!");
+                    return;
+                }
+                
+                const dataStr = JSON.stringify(allProducts, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'qr_products_' + new Date().toISOString().split('T')[0] + '.json';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            
+            // QR Code scanning function
+            function scanQRCode() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        rawContent.textContent = code.data;
+                        
+                        try {
+                            // Try to parse as JSON
+                            const parsedData = JSON.parse(code.data);
+                            if (parsedData.product && parsedData.expiry) {
+                                processScannedData(parsedData);
+                            }
+                        } catch (e) {
+                            // If not JSON, try to parse as text
+                            processTextQR(code.data);
+                        }
+                    }
+                }
+            }
+            
+            // Process scanned data
+            function processScannedData(data) {
+                currentData = data;
+                
+                productName.textContent = data.product;
+                expiryDate.textContent = formatDate(data.expiry);
+                daysUntilExpiry.textContent = calculateDaysUntilExpiry(data.expiry);
+                
+                // Update JSON display
+                const jsonData = {
+                    product: data.product,
+                    expiry: data.expiry,
+                    scanned_at: new Date().toISOString()
+                };
+                
+                jsonOutput.innerHTML = JSON.stringify(jsonData, null, 4)
+                    .replace(/\n/g, '<br>')
+                    .replace(/ /g, '&nbsp;');
+            }
+            
+            // Process text QR code
+            function processTextQR(text) {
+                let product = "Unknown";
+                let expiry = new Date().toISOString().split('T')[0];
+                
+                // Try to extract product and expiry
+                const productMatch = text.match(/product:?\s*([^, \n]+)/i);
+                if (productMatch) product = productMatch[1];
+                
+                const expiryMatch = text.match(/expiry:?\s*([0-9\/]+)/i);
+                if (expiryMatch) {
+                    const dateParts = expiryMatch[1].split('/');
+                    if (dateParts.length === 3) {
+                        expiry = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                    }
+                }
+                
+                processScannedData({ product, expiry });
+            }
+            
+            // Helper functions
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-GB');
+            }
+            
+            function calculateDaysUntilExpiry(expiryDate) {
+                const today = new Date();
+                const expiry = new Date(expiryDate);
+                const diffTime = expiry - today;
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+            
+            // Initialize
+            loadSavedData();
+            stopButton.disabled = true;
+        });
+    </script>
+</body>
+</html>
